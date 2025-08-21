@@ -9,12 +9,16 @@ import { HealthInsights } from "@/components/health-insights";
 import { TelehealthIntegration } from "@/components/telehealth-integration";
 import { ChatInterface } from "@/components/chat-interface";
 import { AnalysisResults } from "@/components/analysis-results";
+import { ClinicalReportGenerator } from "@/components/clinical-report-generator";
+import { EmergencyContact } from "@/components/emergency-contact";
+import { HospitalLocator } from "@/components/hospital-locator";
 import type { AnalysisResult } from "@shared/schema";
 
 export default function Dashboard() {
   const [sessionId] = useState(() => `dashboard-session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [activeTab, setActiveTab] = useState("overview");
 
   const handleAnalysisComplete = (result: AnalysisResult) => {
     setAnalysisResult(result);
@@ -112,14 +116,16 @@ export default function Dashboard() {
         </div>
 
         {/* Main Dashboard Tabs */}
-        <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-6 mb-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-8 mb-6 text-xs">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="chat">AI Assistant</TabsTrigger>
-            <TabsTrigger value="tracker">Symptom Tracker</TabsTrigger>
-            <TabsTrigger value="insights">Health Insights</TabsTrigger>
+            <TabsTrigger value="tracker">Tracker</TabsTrigger>
+            <TabsTrigger value="insights">Insights</TabsTrigger>
             <TabsTrigger value="telehealth">Telehealth</TabsTrigger>
             <TabsTrigger value="reports">Reports</TabsTrigger>
+            <TabsTrigger value="emergency">Emergency</TabsTrigger>
+            <TabsTrigger value="hospitals">Hospitals</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -207,24 +213,36 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <Button className="h-20 flex flex-col space-y-2 bg-medical-blue text-white hover:bg-blue-700">
+                  <Button 
+                    onClick={() => setActiveTab("chat")}
+                    className="h-20 flex flex-col space-y-2 bg-medical-blue text-white hover:bg-blue-700"
+                  >
                     <Brain className="w-6 h-6" />
                     <span>New Analysis</span>
                   </Button>
                   
-                  <Button className="h-20 flex flex-col space-y-2 bg-healing-green text-white hover:bg-green-600">
+                  <Button 
+                    onClick={() => setActiveTab("tracker")}
+                    className="h-20 flex flex-col space-y-2 bg-healing-green text-white hover:bg-green-600"
+                  >
                     <BarChart3 className="w-6 h-6" />
                     <span>Log Symptoms</span>
                   </Button>
                   
-                  <Button className="h-20 flex flex-col space-y-2 bg-warning-amber text-white hover:bg-orange-600">
+                  <Button 
+                    onClick={() => setActiveTab("telehealth")}
+                    className="h-20 flex flex-col space-y-2 bg-warning-amber text-white hover:bg-orange-600"
+                  >
                     <Video className="w-6 h-6" />
                     <span>Book Consultation</span>
                   </Button>
                   
-                  <Button className="h-20 flex flex-col space-y-2 bg-purple-600 text-white hover:bg-purple-700">
+                  <Button 
+                    onClick={() => setActiveTab("hospitals")}
+                    className="h-20 flex flex-col space-y-2 bg-purple-600 text-white hover:bg-purple-700"
+                  >
                     <Calendar className="w-6 h-6" />
-                    <span>View Calendar</span>
+                    <span>Find Hospitals</span>
                   </Button>
                 </div>
               </CardContent>
@@ -267,55 +285,25 @@ export default function Dashboard() {
                 <CardTitle>Health Reports & Analytics</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-gray-900">Available Reports</h3>
-                    
-                    <div className="space-y-3">
-                      <div className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-                        <h4 className="font-medium text-gray-900">Monthly Health Summary</h4>
-                        <p className="text-sm text-gray-600">Comprehensive overview of your health trends</p>
-                        <Badge className="mt-2 bg-green-100 text-green-800">Ready</Badge>
-                      </div>
-                      
-                      <div className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-                        <h4 className="font-medium text-gray-900">Symptom Pattern Analysis</h4>
-                        <p className="text-sm text-gray-600">AI-powered insights into your symptom patterns</p>
-                        <Badge className="mt-2 bg-blue-100 text-blue-800">Ready</Badge>
-                      </div>
-                      
-                      <div className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-                        <h4 className="font-medium text-gray-900">Provider Communication Log</h4>
-                        <p className="text-sm text-gray-600">Summary of consultations and recommendations</p>
-                        <Badge className="mt-2 bg-orange-100 text-orange-800">Updating</Badge>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-gray-900">Export Options</h3>
-                    
-                    <div className="space-y-3">
-                      <Button className="w-full justify-start" variant="outline">
-                        Export to PDF
-                      </Button>
-                      
-                      <Button className="w-full justify-start" variant="outline">
-                        Send to Provider
-                      </Button>
-                      
-                      <Button className="w-full justify-start" variant="outline">
-                        Download CSV Data
-                      </Button>
-                      
-                      <Button className="w-full justify-start" variant="outline">
-                        Schedule Automated Reports
-                      </Button>
-                    </div>
-                  </div>
-                </div>
+                <ClinicalReportGenerator 
+                  analysisResult={analysisResult} 
+                  patientInfo={{
+                    name: "Patient",
+                    age: 35,
+                    sex: "Not specified",
+                    id: sessionId
+                  }}
+                />
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="emergency">
+            <EmergencyContact />
+          </TabsContent>
+
+          <TabsContent value="hospitals">
+            <HospitalLocator />
           </TabsContent>
         </Tabs>
       </main>

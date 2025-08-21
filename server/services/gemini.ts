@@ -13,72 +13,67 @@ export async function analyzeSymptoms(
     // Find similar cases from the dataset for context
     const similarCases = findSimilarCases(complaint, healthRecords);
     
-    const systemPrompt = `You are an expert medical AI assistant trained to analyze symptoms and provide triage recommendations. Your role is to:
+    const systemPrompt = `You are an expert medical AI assistant providing clinical triage analysis. Your role is to:
 
-1. Extract key medical entities from patient descriptions
-2. Assess symptom severity and risk level
-3. Provide appropriate triage recommendations
-4. Suggest possible conditions based on symptoms
-5. Always emphasize the importance of professional medical advice
+1. Extract and classify all reported symptoms with medical precision
+2. Assess symptom severity using clinical criteria
+3. Determine appropriate risk stratification and urgency level
+4. Provide evidence-based differential diagnoses
+5. Recommend appropriate clinical actions and follow-up
 
-IMPORTANT GUIDELINES:
-- Always be conservative in risk assessment - err on the side of caution
-- Clearly distinguish between emergency, medium, and low risk situations
-- Use medical terminology appropriately but explain in patient-friendly language
-- Base recommendations on established medical guidelines
-- Always include appropriate medical disclaimers
+CLINICAL GUIDELINES:
+- Use conservative risk assessment - patient safety is paramount
+- Base analysis on established medical protocols and clinical decision rules
+- Provide clear, actionable recommendations for healthcare providers
+- Include appropriate medical terminology with patient-friendly explanations
+- Always emphasize the need for professional medical evaluation
 
-Respond with a JSON object containing the analysis results. Use this exact structure:
-{
-  "symptoms": ["array", "of", "extracted", "symptoms"],
-  "severity": "mild|moderate|severe",
-  "duration": "extracted duration from complaint",
-  "onset": "sudden|gradual|chronic",
-  "triggers": "identified triggers or 'no clear trigger'",
-  "relief": "what provides relief or 'no relief mentioned'",
-  "riskLevel": "low|medium|emergency",
-  "recommendedAction": "specific recommendation for patient",
-  "suspectedConditions": [
-    {
-      "name": "condition name",
-      "probability": "low|medium|high",
-      "description": "brief explanation"
-    }
-  ],
-  "medicalDisclaimer": "appropriate disclaimer text"
-}`;
+SYMPTOM EXTRACTION RULES:
+- Extract ALL mentioned symptoms, including associated symptoms
+- Include physical symptoms, pain descriptions, timing, and contextual factors
+- Capture severity indicators, location specificity, and temporal patterns
+- Note any red flag symptoms that require immediate attention
 
-    const userPrompt = `Please analyze the following patient complaint and provide a medical assessment:
+RISK STRATIFICATION:
+- EMERGENCY: Immediate life-threatening conditions (chest pain, SOB, altered mental status, severe bleeding)
+- MEDIUM: Urgent evaluation needed within 24-48h (persistent symptoms, concerning patterns)  
+- LOW: Routine evaluation appropriate (minor symptoms, stable conditions)
 
-PATIENT COMPLAINT: "${complaint}"
+Always provide comprehensive analysis with specific medical reasoning.`;
+
+    const userPrompt = `CLINICAL CASE ANALYSIS REQUEST
+
+CHIEF COMPLAINT: "${complaint}"
 
 ${userInfo ? `
-PATIENT INFORMATION:
-- Age: ${userInfo.age || 'Not provided'}
-- Sex: ${userInfo.sex || 'Not provided'}
-- Existing Conditions: ${userInfo.existingConditions?.join(', ') || 'None reported'}
+PATIENT DEMOGRAPHICS:
+- Age: ${userInfo.age || 'Not specified'}
+- Sex: ${userInfo.sex || 'Not specified'}  
+- Medical History: ${userInfo.existingConditions?.join(', ') || 'No known conditions reported'}
 ` : ''}
 
 ${similarCases.length > 0 ? `
-SIMILAR CASES FROM MEDICAL DATABASE (for reference):
+CLINICAL DATABASE REFERENCE (Similar presentations):
 ${similarCases.slice(0, 3).map(case_ => `
-- Complaint: "${case_.complaint}"
-- Symptoms: ${case_.symptoms?.join(', ') || 'N/A'}
-- Severity: ${case_.severity}
-- Risk Level: ${case_.riskLevel}
-- Action: ${case_.recommendedAction}
+Case: "${case_.complaint}"
+Symptoms: ${case_.symptoms?.join(', ') || 'Not documented'}
+Severity Assessment: ${case_.severity}  
+Risk Stratification: ${case_.riskLevel}
+Clinical Action: ${case_.recommendedAction}
 `).join('')}
 ` : ''}
 
-RISK LEVEL CRITERIA:
-- EMERGENCY: Life-threatening symptoms requiring immediate medical attention (severe chest pain, difficulty breathing, severe bleeding, loss of consciousness, stroke symptoms)
-- MEDIUM: Symptoms requiring medical evaluation within 24-48 hours (persistent pain, concerning symptoms, symptoms in vulnerable populations)
-- LOW: Minor symptoms that can be managed with self-care and monitoring
+ANALYSIS REQUIREMENTS:
+1. Extract ALL symptoms mentioned (primary, secondary, associated)
+2. Assess clinical severity using standard medical criteria
+3. Determine appropriate risk level and urgency
+4. Provide differential diagnosis with clinical reasoning
+5. Recommend specific clinical actions and follow-up
 
-Please provide a thorough but concise analysis focusing on patient safety and appropriate care recommendations.`;
+Focus on comprehensive symptom extraction and evidence-based clinical decision making. Ensure all potential conditions are considered based on the presenting symptoms.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-pro",
+      model: "gemini-2.0-flash-exp",
       config: {
         systemInstruction: systemPrompt,
         responseMimeType: "application/json",
