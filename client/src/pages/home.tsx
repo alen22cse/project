@@ -38,6 +38,7 @@ export default function Home() {
               <a href="#" className="text-gray-600 hover:text-medical-blue transition-colors">How it Works</a>
               <a href="#" className="text-gray-600 hover:text-medical-blue transition-colors">Privacy</a>
               <a href="#" className="text-gray-600 hover:text-medical-blue transition-colors">Support</a>
+              <a href="/dashboard" className="text-gray-600 hover:text-medical-blue transition-colors">Dashboard</a>
               <Button className="bg-medical-blue text-white hover:bg-blue-700">
                 Sign In
               </Button>

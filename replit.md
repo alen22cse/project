@@ -2,7 +2,9 @@
 
 ## Overview
 
-HealthWhisper is an AI-powered health symptom analysis application that provides intelligent triage recommendations. The application allows users to describe their symptoms through a chat interface and receive AI-generated analysis including risk assessment, potential conditions, and recommended actions. Built with a modern full-stack architecture, it combines React frontend with Express backend and leverages OpenAI for medical analysis.
+HealthWhisper is an AI-powered health symptom analysis application that provides intelligent triage recommendations. The application allows users to describe their symptoms through a chat interface and receive AI-generated analysis including risk assessment, potential conditions, and recommended actions. Built with a modern full-stack architecture, it combines React frontend with Express backend and leverages Google Gemini for medical analysis.
+
+The application now includes advanced features for comprehensive health management including symptom tracking, health insights dashboard, telehealth integration, and detailed analytics.
 
 ## User Preferences
 
@@ -38,9 +40,10 @@ Preferred communication style: Simple, everyday language.
 - **Data Validation**: Comprehensive input sanitization for all API endpoints
 
 ### External Service Integrations
-- **AI Service**: OpenAI GPT-4o for symptom analysis and medical recommendations
+- **AI Service**: Google Gemini 2.5 Pro for symptom analysis and medical recommendations
 - **Medical Analysis**: Custom prompt engineering for accurate health triage
-- **Context Enhancement**: Historical health records for improved AI recommendations
+- **Context Enhancement**: Historical health records with 5000 synthetic health records for AI context
+- **Advanced Features**: Symptom tracking, health insights, telehealth integration
 
 ### Design Patterns and Architectural Decisions
 
@@ -54,10 +57,26 @@ Preferred communication style: Simple, everyday language.
 
 **Scalable Data Layer**: Drizzle ORM with PostgreSQL provides ACID compliance and horizontal scaling capabilities for production use.
 
+## Recent Changes (January 2024)
+
+**Later Stage Features Implementation**:
+- **Advanced Dashboard**: Comprehensive health management dashboard with tabbed interface
+- **Symptom Tracker**: Detailed symptom logging with severity tracking, pain levels, triggers, and pattern analysis
+- **Health Insights**: AI-powered pattern recognition with personal insights, trend analysis, and regional health data
+- **Telehealth Integration**: Provider search, appointment booking, video consultation scheduling, and health report management
+- **Analytics & Reports**: Health trend visualization, exportable reports, and automated health summaries
+
+**Technical Enhancements**:
+- Switched from OpenAI to Google Gemini 2.5 Pro for AI analysis
+- Integrated 5000 synthetic health records for enhanced AI context
+- Added comprehensive data visualization components
+- Implemented advanced form handling for complex health data entry
+- Enhanced navigation with multi-tab dashboard interface
+
 ## External Dependencies
 
 ### Core Services
-- **OpenAI API**: GPT-4o model for medical symptom analysis and triage recommendations
+- **Google Gemini API**: Gemini 2.5 Pro model for medical symptom analysis and triage recommendations
 - **Neon Database**: Serverless PostgreSQL for persistent data storage and session management
 
 ### Development Tools
