@@ -12,6 +12,9 @@ import { AnalysisResults } from "@/components/analysis-results";
 import { ClinicalReportGenerator } from "@/components/clinical-report-generator";
 import { EmergencyContact } from "@/components/emergency-contact";
 import { HospitalLocator } from "@/components/hospital-locator";
+import { PDFGenerator } from "@/components/pdf-generator";
+import { HospitalFinder } from "@/components/hospital-finder";
+import { HabitTracker } from "@/components/habit-tracker";
 import type { AnalysisResult } from "@shared/schema";
 
 export default function Dashboard() {
@@ -268,7 +271,7 @@ export default function Dashboard() {
           </TabsContent>
 
           <TabsContent value="tracker">
-            <SymptomTracker />
+            <HabitTracker />
           </TabsContent>
 
           <TabsContent value="insights">
@@ -284,7 +287,7 @@ export default function Dashboard() {
               <CardHeader>
                 <CardTitle>Health Reports & Analytics</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
                 <ClinicalReportGenerator 
                   analysisResult={analysisResult} 
                   patientInfo={{
@@ -294,6 +297,20 @@ export default function Dashboard() {
                     id: sessionId
                   }}
                 />
+                
+                <div className="flex items-center gap-4 pt-4 border-t">
+                  <PDFGenerator 
+                    analysisResult={analysisResult}
+                    patientInfo={{
+                      name: "Current Patient",
+                      age: 35,
+                      gender: "Not specified"
+                    }}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Download your complete health analysis report
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -303,7 +320,7 @@ export default function Dashboard() {
           </TabsContent>
 
           <TabsContent value="hospitals">
-            <HospitalLocator />
+            <HospitalFinder />
           </TabsContent>
         </Tabs>
       </main>

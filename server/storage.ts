@@ -1,13 +1,44 @@
-import { type HealthRecord, type InsertHealthRecord, type ChatMessage, type InsertChatMessage } from "@shared/schema";
+import { 
+  type HealthRecord, 
+  type InsertHealthRecord, 
+  type ChatMessage, 
+  type InsertChatMessage,
+  type User,
+  type InsertUser,
+  type SymptomReport,
+  type InsertSymptomReport,
+  type AiOutput,
+  type InsertAiOutput,
+  type HabitLog,
+  type InsertHabitLog
+} from "@shared/schema";
 import { randomUUID } from "crypto";
 import fs from "fs";
 import path from "path";
 
 export interface IStorage {
+  // User methods
+  getUserById(id: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
+  updateUser(id: string, updates: Partial<User>): Promise<User | undefined>;
+  
   // Health records methods
   getAllHealthRecords(): Promise<HealthRecord[]>;
   getHealthRecordById(id: string): Promise<HealthRecord | undefined>;
   createHealthRecord(record: InsertHealthRecord): Promise<HealthRecord>;
+  
+  // Symptom reports methods
+  getSymptomReportsByUserId(userId: string): Promise<SymptomReport[]>;
+  createSymptomReport(report: InsertSymptomReport): Promise<SymptomReport>;
+  
+  // AI outputs methods
+  getAiOutputByReportId(reportId: string): Promise<AiOutput | undefined>;
+  createAiOutput(output: InsertAiOutput): Promise<AiOutput>;
+  
+  // Habit logs methods
+  getHabitLogsByUserId(userId: string, startDate?: Date, endDate?: Date): Promise<HabitLog[]>;
+  createHabitLog(log: InsertHabitLog): Promise<HabitLog>;
   
   // Chat messages methods
   getChatMessages(sessionId: string): Promise<ChatMessage[]>;
@@ -16,11 +47,19 @@ export interface IStorage {
 }
 
 export class MemStorage implements IStorage {
+  private users: Map<string, User>;
   private healthRecords: Map<string, HealthRecord>;
+  private symptomReports: Map<string, SymptomReport>;
+  private aiOutputs: Map<string, AiOutput>;
+  private habitLogs: Map<string, HabitLog>;
   private chatMessages: Map<string, ChatMessage>;
 
   constructor() {
+    this.users = new Map();
     this.healthRecords = new Map();
+    this.symptomReports = new Map();
+    this.aiOutputs = new Map();
+    this.habitLogs = new Map();
     this.chatMessages = new Map();
     this.loadSyntheticData();
   }
@@ -98,11 +137,134 @@ export class MemStorage implements IStorage {
       .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
   }
 
+  // User methods
+  async getUserById(id: string): Promise<User | undefined> {
+    return this.users.get(id);
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    for (const user of this.users.values()) {
+      if (user.email === email) {
+        return user;
+      }
+    }
+    return undefined;
+  }
+
+  async createUser(user: InsertUser): Promise<User> {
+    const id = user.id || randomUUID();
+    const newUser: User = {
+      id,
+      email: user.email,
+      hashedPassword: user.hashedPassword,
+      firstName: user.firstName || null,
+      lastName: user.lastName || null,
+      age: user.age || null,
+      gender: user.gender || null,
+      profileImageUrl: user.profileImageUrl || null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.users.set(id, newUser);
+    return newUser;
+  }
+
+  async updateUser(id: string, updates: Partial<User>): Promise<User | undefined> {
+    const user = this.users.get(id);
+    if (!user) return undefined;
+    
+    const updatedUser = { ...user, ...updates, updatedAt: new Date() };
+    this.users.set(id, updatedUser);
+    return updatedUser;
+  }
+
+  // Symptom reports methods
+  async getSymptomReportsByUserId(userId: string): Promise<SymptomReport[]> {
+    return Array.from(this.symptomReports.values()).filter(
+      report => report.userId === userId
+    );
+  }
+
+  async createSymptomReport(report: InsertSymptomReport): Promise<SymptomReport> {
+    const id = report.id || randomUUID();
+    const newReport: SymptomReport = {
+      id,
+      userId: report.userId || null,
+      complaint: report.complaint,
+      symptoms: report.symptoms || null,
+      severity: report.severity || null,
+      riskLevel: report.riskLevel || null,
+      createdAt: new Date(),
+    };
+    this.symptomReports.set(id, newReport);
+    return newReport;
+  }
+
+  // AI outputs methods
+  async getAiOutputByReportId(reportId: string): Promise<AiOutput | undefined> {
+    for (const output of this.aiOutputs.values()) {
+      if (output.reportId === reportId) {
+        return output;
+      }
+    }
+    return undefined;
+  }
+
+  async createAiOutput(output: InsertAiOutput): Promise<AiOutput> {
+    const id = output.id || randomUUID();
+    const newOutput: AiOutput = {
+      id,
+      reportId: output.reportId || null,
+      analysisResult: output.analysisResult,
+      confidence: output.confidence || null,
+      createdAt: new Date(),
+    };
+    this.aiOutputs.set(id, newOutput);
+    return newOutput;
+  }
+
+  // Habit logs methods
+  async getHabitLogsByUserId(userId: string, startDate?: Date, endDate?: Date): Promise<HabitLog[]> {
+    let logs = Array.from(this.habitLogs.values()).filter(
+      log => log.userId === userId
+    );
+
+    if (startDate || endDate) {
+      logs = logs.filter(log => {
+        const logDate = new Date(log.date);
+        if (startDate && logDate < startDate) return false;
+        if (endDate && logDate > endDate) return false;
+        return true;
+      });
+    }
+
+    return logs;
+  }
+
+  async createHabitLog(log: InsertHabitLog): Promise<HabitLog> {
+    const id = log.id || randomUUID();
+    const newLog: HabitLog = {
+      id,
+      userId: log.userId,
+      date: log.date,
+      nutrition: log.nutrition || null,
+      sleep: log.sleep || null,
+      exercise: log.exercise || null,
+      medication: log.medication || null,
+      mood: log.mood || null,
+      createdAt: new Date(),
+    };
+    this.habitLogs.set(id, newLog);
+    return newLog;
+  }
+
   async createChatMessage(message: InsertChatMessage): Promise<ChatMessage> {
     const id = message.id || randomUUID();
     const chatMessage: ChatMessage = {
-      ...message,
       id,
+      sessionId: message.sessionId,
+      userId: message.userId || null,
+      content: message.content,
       isUser: message.isUser ?? 0,
       timestamp: message.timestamp || new Date().toISOString(),
     };
