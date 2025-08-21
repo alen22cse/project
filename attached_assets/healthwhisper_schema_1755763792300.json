@@ -1,0 +1,18 @@
+{
+  "id": "uuid",
+  "complaint": "synthetic utterance",
+  "labels": {
+    "symptoms": "list",
+    "severity": "string",
+    "duration": "string",
+    "onset": "string",
+    "triggers": "string",
+    "relief": "string",
+    "age": "int",
+    "sex": "string",
+    "comorbidities": "list",
+    "risk_level": "string",
+    "recommended_action": "string",
+    "suspected_conditions": "list"
+  }
+}
