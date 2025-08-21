@@ -115,14 +115,19 @@ export default function Dashboard() {
             <TabsContent value="symptoms" className="space-y-6 mt-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <SymptomTracker 
-                  onAnalysisComplete={handleAnalysisComplete}
-                  onAnalysisStart={handleAnalysisStart}
                   sessionId={sessionId}
                 />
-                <ChatInterface sessionId={sessionId} />
+                <ChatInterface 
+                  sessionId={sessionId}
+                  onAnalysisComplete={handleAnalysisComplete}
+                  onAnalysisStart={handleAnalysisStart}
+                />
               </div>
               {analysisResult && (
-                <AnalysisResults result={analysisResult} />
+                <AnalysisResults 
+                  result={analysisResult}
+                  isAnalyzing={isAnalyzing}
+                />
               )}
             </TabsContent>
 
@@ -355,7 +360,7 @@ export default function Dashboard() {
           </TabsContent>
 
           <TabsContent value="insights">
-            <HealthInsights />
+            <EnhancedHealthInsights />
           </TabsContent>
 
           <TabsContent value="telehealth">

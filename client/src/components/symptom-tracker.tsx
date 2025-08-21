@@ -18,7 +18,11 @@ interface SymptomEntry {
   painLevel: number;
 }
 
-export function SymptomTracker() {
+interface SymptomTrackerProps {
+  sessionId: string;
+}
+
+export function SymptomTracker({ sessionId }: SymptomTrackerProps) {
   const [entries, setEntries] = useState<SymptomEntry[]>([
     {
       id: "1",
