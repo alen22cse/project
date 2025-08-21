@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useAuth } from "@/hooks/useAuthSimple";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ export default function AuthPage() {
   const { login, signup, isLoading } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentTab, setCurrentTab] = useState("login");
 
   const [loginForm, setLoginForm] = useState({
     email: "",
@@ -70,8 +71,18 @@ export default function AuthPage() {
       );
       toast({
         title: "Account Created!",
-        description: "Welcome to HealthWhisper. Your account has been created successfully.",
+        description: "Please sign in with your new credentials.",
       });
+      
+      // Clear the signup form and switch to login tab
+      setSignupForm({
+        email: "",
+        password: "",
+        confirmPassword: "",
+        firstName: "",
+        lastName: "",
+      });
+      setCurrentTab("login");
     } catch (error) {
       toast({
         title: "Signup Failed",
@@ -131,7 +142,7 @@ export default function AuthPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="login" className="w-full">
+            <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="login">Sign In</TabsTrigger>
                 <TabsTrigger value="signup">Sign Up</TabsTrigger>

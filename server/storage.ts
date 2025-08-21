@@ -10,7 +10,15 @@ import {
   type AiOutput,
   type InsertAiOutput,
   type HabitLog,
-  type InsertHabitLog
+  type InsertHabitLog,
+  type DigitalTwin,
+  type InsertDigitalTwin,
+  type TwinSimulation,
+  type InsertTwinSimulation,
+  type MultiModalAnalysis,
+  type InsertMultiModalAnalysis,
+  type SecondOpinion,
+  type InsertSecondOpinion,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import fs from "fs";
@@ -44,6 +52,24 @@ export interface IStorage {
   getChatMessages(sessionId: string): Promise<ChatMessage[]>;
   createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
   clearChatSession(sessionId: string): Promise<void>;
+  
+  // Digital Twins methods
+  createDigitalTwin(twin: InsertDigitalTwin): Promise<DigitalTwin>;
+  getDigitalTwinsByUserId(userId: string): Promise<DigitalTwin[]>;
+  getDigitalTwin(id: string): Promise<DigitalTwin | undefined>;
+  updateDigitalTwin(id: string, updates: Partial<InsertDigitalTwin>): Promise<DigitalTwin | undefined>;
+  
+  // Twin Simulations methods
+  createTwinSimulation(simulation: InsertTwinSimulation): Promise<TwinSimulation>;
+  getTwinSimulations(twinId: string): Promise<TwinSimulation[]>;
+  
+  // Multi-Modal Analysis methods
+  createMultiModalAnalysis(analysis: InsertMultiModalAnalysis): Promise<MultiModalAnalysis>;
+  getMultiModalAnalysesByUserId(userId: string): Promise<MultiModalAnalysis[]>;
+  
+  // Second Opinions methods
+  createSecondOpinion(opinion: InsertSecondOpinion): Promise<SecondOpinion>;
+  getSecondOpinionsByUserId(userId: string): Promise<SecondOpinion[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -53,6 +79,10 @@ export class MemStorage implements IStorage {
   private aiOutputs: Map<string, AiOutput>;
   private habitLogs: Map<string, HabitLog>;
   private chatMessages: Map<string, ChatMessage>;
+  private digitalTwins: Map<string, DigitalTwin>;
+  private twinSimulations: Map<string, TwinSimulation>;
+  private multiModalAnalyses: Map<string, MultiModalAnalysis>;
+  private secondOpinions: Map<string, SecondOpinion>;
 
   constructor() {
     this.users = new Map();
@@ -61,6 +91,10 @@ export class MemStorage implements IStorage {
     this.aiOutputs = new Map();
     this.habitLogs = new Map();
     this.chatMessages = new Map();
+    this.digitalTwins = new Map();
+    this.twinSimulations = new Map();
+    this.multiModalAnalyses = new Map();
+    this.secondOpinions = new Map();
     this.loadSyntheticData();
   }
 
@@ -270,6 +304,98 @@ export class MemStorage implements IStorage {
       .map(([id]) => id);
     
     messagesToDelete.forEach(id => this.chatMessages.delete(id));
+  }
+
+  // Digital Twin methods
+  async createDigitalTwin(twin: InsertDigitalTwin): Promise<DigitalTwin> {
+    const id = twin.id || randomUUID();
+    const newTwin: DigitalTwin = {
+      ...twin,
+      id,
+      predictiveModel: twin.predictiveModel || null,
+      lastUpdated: new Date(),
+      createdAt: new Date(),
+    };
+    this.digitalTwins.set(id, newTwin);
+    return newTwin;
+  }
+
+  async getDigitalTwinsByUserId(userId: string): Promise<DigitalTwin[]> {
+    return Array.from(this.digitalTwins.values()).filter(twin => twin.userId === userId);
+  }
+
+  async getDigitalTwin(id: string): Promise<DigitalTwin | undefined> {
+    return this.digitalTwins.get(id);
+  }
+
+  async updateDigitalTwin(id: string, updates: Partial<InsertDigitalTwin>): Promise<DigitalTwin | undefined> {
+    const existing = this.digitalTwins.get(id);
+    if (!existing) return undefined;
+    
+    const updated: DigitalTwin = {
+      ...existing,
+      ...updates,
+      lastUpdated: new Date(),
+    };
+    this.digitalTwins.set(id, updated);
+    return updated;
+  }
+
+  // Twin Simulation methods
+  async createTwinSimulation(simulation: InsertTwinSimulation): Promise<TwinSimulation> {
+    const id = simulation.id || randomUUID();
+    const newSimulation: TwinSimulation = {
+      ...simulation,
+      id,
+      results: simulation.results || null,
+      createdAt: new Date(),
+    };
+    this.twinSimulations.set(id, newSimulation);
+    return newSimulation;
+  }
+
+  async getTwinSimulations(twinId: string): Promise<TwinSimulation[]> {
+    return Array.from(this.twinSimulations.values()).filter(sim => sim.twinId === twinId);
+  }
+
+  // Multi-Modal Analysis methods
+  async createMultiModalAnalysis(analysis: InsertMultiModalAnalysis): Promise<MultiModalAnalysis> {
+    const id = analysis.id || randomUUID();
+    const newAnalysis: MultiModalAnalysis = {
+      ...analysis,
+      id,
+      textInput: analysis.textInput || null,
+      voiceFileUrl: analysis.voiceFileUrl || null,
+      imageFileUrl: analysis.imageFileUrl || null,
+      extractedData: analysis.extractedData || null,
+      aiAnalysis: analysis.aiAnalysis || null,
+      createdAt: new Date(),
+    };
+    this.multiModalAnalyses.set(id, newAnalysis);
+    return newAnalysis;
+  }
+
+  async getMultiModalAnalysesByUserId(userId: string): Promise<MultiModalAnalysis[]> {
+    return Array.from(this.multiModalAnalyses.values()).filter(analysis => analysis.userId === userId);
+  }
+
+  // Second Opinion methods
+  async createSecondOpinion(opinion: InsertSecondOpinion): Promise<SecondOpinion> {
+    const id = opinion.id || randomUUID();
+    const newOpinion: SecondOpinion = {
+      ...opinion,
+      id,
+      prescribedMedications: opinion.prescribedMedications || [],
+      patientSymptoms: opinion.patientSymptoms || null,
+      aiAnalysis: opinion.aiAnalysis || null,
+      createdAt: new Date(),
+    };
+    this.secondOpinions.set(id, newOpinion);
+    return newOpinion;
+  }
+
+  async getSecondOpinionsByUserId(userId: string): Promise<SecondOpinion[]> {
+    return Array.from(this.secondOpinions.values()).filter(opinion => opinion.userId === userId);
   }
 
   // Helper method to find similar symptoms in dataset

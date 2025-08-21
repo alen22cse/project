@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 
 interface User {
   id: string;
@@ -11,6 +12,7 @@ export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [, setLocation] = useLocation();
 
   useEffect(() => {
     const savedToken = localStorage.getItem("auth_token");
@@ -56,6 +58,9 @@ export function useAuth() {
     setToken(data.token);
     setUser(data.user);
     localStorage.setItem("auth_token", data.token);
+    
+    // Redirect to dashboard after successful login
+    setTimeout(() => setLocation("/dashboard"), 100);
   };
 
   const signup = async (email: string, password: string, firstName?: string, lastName?: string) => {
@@ -68,9 +73,8 @@ export function useAuth() {
     if (!response.ok) throw new Error("Signup failed");
     
     const data = await response.json();
-    setToken(data.token);
-    setUser(data.user);
-    localStorage.setItem("auth_token", data.token);
+    // Don't automatically login after signup - let them sign in
+    return data;
   };
 
   const logout = () => {

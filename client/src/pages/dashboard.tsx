@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Heart, BarChart3, Brain, Video, Calendar, Settings, Bell, User } from "lucide-react";
+import { Heart, BarChart3, Brain, Video, Calendar, Settings, Bell, User, Cpu, Camera, Stethoscope } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +16,9 @@ import { PDFGenerator } from "@/components/pdf-generator";
 import { HospitalFinder } from "@/components/hospital-finder";
 import { HabitTracker } from "@/components/habit-tracker";
 import { DynamicDashboardOverview } from "@/components/dynamic-dashboard-overview";
+import DigitalTwin from "@/components/digital-twin";
+import MultiModalAnalysis from "@/components/multi-modal-analysis";
+import SecondOpinion from "@/components/second-opinion";
 import { useAuth } from "@/hooks/useAuthSimple";
 import type { AnalysisResult } from "@shared/schema";
 
@@ -81,7 +84,7 @@ export default function Dashboard() {
         {/* Navigation Tabs */}
         <div className="mb-8">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-9 text-sm">
               <TabsTrigger value="overview" className="flex items-center gap-2">
                 <BarChart3 className="w-4 h-4" />
                 Overview
@@ -105,6 +108,18 @@ export default function Dashboard() {
               <TabsTrigger value="emergency" className="flex items-center gap-2">
                 <Bell className="w-4 h-4" />
                 Emergency
+              </TabsTrigger>
+              <TabsTrigger value="twin" className="flex items-center gap-2">
+                <Cpu className="w-4 h-4" />
+                AI Twin
+              </TabsTrigger>
+              <TabsTrigger value="multimodal" className="flex items-center gap-2">
+                <Camera className="w-4 h-4" />
+                Multi-Modal
+              </TabsTrigger>
+              <TabsTrigger value="second-opinion" className="flex items-center gap-2">
+                <Stethoscope className="w-4 h-4" />
+                2nd Opinion
               </TabsTrigger>
             </TabsList>
 
@@ -148,6 +163,18 @@ export default function Dashboard() {
                 <EmergencyContact />
                 <HospitalFinder />
               </div>
+            </TabsContent>
+
+            <TabsContent value="twin" className="space-y-6 mt-6">
+              <DigitalTwin />
+            </TabsContent>
+
+            <TabsContent value="multimodal" className="space-y-6 mt-6">
+              <MultiModalAnalysis />
+            </TabsContent>
+
+            <TabsContent value="second-opinion" className="space-y-6 mt-6">
+              <SecondOpinion />
             </TabsContent>
           </Tabs>
         </div>

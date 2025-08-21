@@ -89,6 +89,109 @@ export const chatMessages = pgTable("chat_messages", {
   timestamp: varchar("timestamp").notNull(),
 });
 
+// Digital Twin profiles table
+export const digitalTwins = pgTable("digital_twins", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  name: varchar("name").notNull(),
+  baselineData: jsonb("baseline_data").$type<{
+    age: number;
+    weight: number;
+    height: number;
+    medicalHistory: string[];
+    currentMedications: string[];
+    allergies: string[];
+    lifestyle: {
+      sleepHours: number;
+      exerciseFrequency: string;
+      dietType: string;
+      smoking: boolean;
+      drinking: string;
+    };
+  }>().notNull(),
+  predictiveModel: jsonb("predictive_model").$type<{
+    healthScore: number;
+    riskFactors: string[];
+    recommendations: string[];
+  }>(),
+  lastUpdated: timestamp("last_updated").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Digital Twin simulations table
+export const twinSimulations = pgTable("twin_simulations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  twinId: varchar("twin_id").references(() => digitalTwins.id).notNull(),
+  simulationType: varchar("simulation_type").notNull(), // 'sleep', 'diet', 'exercise', etc.
+  scenario: jsonb("scenario").$type<{
+    changes: Record<string, any>;
+    timeframe: string;
+  }>().notNull(),
+  results: jsonb("results").$type<{
+    predictedOutcome: string;
+    confidence: number;
+    impactScore: number;
+    recommendations: string[];
+  }>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Multi-modal symptom analysis table
+export const multiModalAnalysis = pgTable("multimodal_analysis", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  analysisType: varchar("analysis_type").notNull(), // 'text', 'voice', 'image', 'combined'
+  textInput: text("text_input"),
+  voiceFileUrl: varchar("voice_file_url"),
+  imageFileUrl: varchar("image_file_url"),
+  extractedData: jsonb("extracted_data").$type<{
+    symptoms: string[];
+    severity: string;
+    bodyParts: string[];
+    visualFindings?: string[];
+    speechAnalysis?: {
+      emotionalState: string;
+      painLevel: number;
+      clarity: string;
+    };
+  }>(),
+  aiAnalysis: jsonb("ai_analysis").$type<{
+    diagnosis: string[];
+    urgency: string;
+    recommendations: string[];
+    confidence: number;
+  }>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Second opinion analysis table
+export const secondOpinions = pgTable("second_opinions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  doctorDiagnosis: text("doctor_diagnosis").notNull(),
+  prescribedMedications: jsonb("prescribed_medications").$type<{
+    name: string;
+    dosage: string;
+    frequency: string;
+    duration: string;
+  }[]>(),
+  patientSymptoms: text("patient_symptoms"),
+  aiAnalysis: jsonb("ai_analysis").$type<{
+    diagnosisExplanation: string;
+    medicationAnalysis: {
+      name: string;
+      purpose: string;
+      sideEffects: string[];
+      interactions: string[];
+      precautions: string[];
+    }[];
+    alternativeOptions: string[];
+    redFlags: string[];
+    questions: string[];
+  }>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Symptom analysis request schema
 export const symptomAnalysisSchema = z.object({
   complaint: z.string().min(1, "Please describe your symptoms"),
@@ -143,6 +246,10 @@ export const insertUserSchema = createInsertSchema(users);
 export const insertSymptomReportSchema = createInsertSchema(symptomReports);
 export const insertAiOutputSchema = createInsertSchema(aiOutputs);
 export const insertHabitLogSchema = createInsertSchema(habitLogs);
+export const insertDigitalTwinSchema = createInsertSchema(digitalTwins);
+export const insertTwinSimulationSchema = createInsertSchema(twinSimulations);
+export const insertMultiModalAnalysisSchema = createInsertSchema(multiModalAnalysis);
+export const insertSecondOpinionSchema = createInsertSchema(secondOpinions);
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
@@ -160,3 +267,11 @@ export type SymptomAnalysisRequest = z.infer<typeof symptomAnalysisSchema>;
 export type AnalysisResult = z.infer<typeof analysisResultSchema>;
 export type SignupRequest = z.infer<typeof signupSchema>;
 export type LoginRequest = z.infer<typeof loginSchema>;
+export type DigitalTwin = typeof digitalTwins.$inferSelect;
+export type InsertDigitalTwin = typeof digitalTwins.$inferInsert;
+export type TwinSimulation = typeof twinSimulations.$inferSelect;
+export type InsertTwinSimulation = typeof twinSimulations.$inferInsert;
+export type MultiModalAnalysis = typeof multiModalAnalysis.$inferSelect;
+export type InsertMultiModalAnalysis = typeof multiModalAnalysis.$inferInsert;
+export type SecondOpinion = typeof secondOpinions.$inferSelect;
+export type InsertSecondOpinion = typeof secondOpinions.$inferInsert;
