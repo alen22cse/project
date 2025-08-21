@@ -2,7 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 import type { SymptomAnalysisRequest, AnalysisResult, HealthRecord } from "@shared/schema";
 
 // Using Gemini 2.0 Flash for enhanced medical analysis as requested
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_GEMINI_API_KEY || "" });
 
 export async function analyzeSymptoms(
   complaint: string,

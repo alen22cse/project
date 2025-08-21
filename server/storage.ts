@@ -398,6 +398,7 @@ export class MemStorage implements IStorage {
     return Array.from(this.secondOpinions.values()).filter(opinion => opinion.userId === userId);
   }
 
+
   // Helper method to find similar symptoms in dataset
   findSimilarRecords(userSymptoms: string[]): HealthRecord[] {
     const records = Array.from(this.healthRecords.values());
