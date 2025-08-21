@@ -263,6 +263,85 @@ export function DynamicDashboardOverview({ onViewAnalytics }: DashboardOverviewP
     );
   }
 
+  const generateMealPlan = (stats: HealthStats) => {
+    const baseMeals = [
+      {
+        name: "Energizing Breakfast",
+        time: "7:00 AM",
+        description: "Oatmeal with berries, almonds, and honey",
+        calories: 350,
+        nutrients: "High fiber, antioxidants"
+      },
+      {
+        name: "Balanced Lunch",
+        time: "12:30 PM",
+        description: "Grilled chicken salad with quinoa and vegetables",
+        calories: 450,
+        nutrients: "Protein, complex carbs"
+      },
+      {
+        name: "Healthy Snack",
+        time: "3:30 PM",
+        description: "Greek yogurt with nuts and fruit",
+        calories: 200,
+        nutrients: "Protein, probiotics"
+      },
+      {
+        name: "Nutritious Dinner",
+        time: "7:00 PM",
+        description: "Baked salmon with sweet potato and broccoli",
+        calories: 520,
+        nutrients: "Omega-3, vitamins"
+      }
+    ];
+    
+    // Customize based on health score
+    if (stats.healthScore < 60) {
+      baseMeals[0].description = "Protein smoothie with spinach and banana";
+      baseMeals[1].description = "Turkey wrap with whole grain tortilla";
+    }
+    
+    return baseMeals;
+  };
+  
+  const generateHealthRecommendations = (stats: HealthStats) => {
+    const recommendations = [];
+    
+    if (stats.healthScore < 70) {
+      recommendations.push({
+        category: "Sleep Priority",
+        suggestion: "Aim for 7-9 hours of quality sleep to boost energy and recovery",
+        priority: "high" as const,
+        benefit: "Improves focus and metabolism"
+      });
+    }
+    
+    if (stats.daysTracked < 7) {
+      recommendations.push({
+        category: "Consistency",
+        suggestion: "Track your habits daily for better insights and motivation",
+        priority: "medium" as const,
+        benefit: "Builds sustainable healthy habits"
+      });
+    }
+    
+    recommendations.push({
+      category: "Hydration",
+      suggestion: "Drink 8 glasses of water daily for optimal health",
+      priority: "medium" as const,
+      benefit: "Improves skin health and energy"
+    });
+    
+    recommendations.push({
+      category: "Movement",
+      suggestion: "Take a 10-minute walk after each meal",
+      priority: "low" as const,
+      benefit: "Aids digestion and mood"
+    });
+    
+    return recommendations.slice(0, 4);
+  };
+
   return (
     <div className="space-y-6">
       {/* Key Metrics */}
@@ -348,17 +427,61 @@ export function DynamicDashboardOverview({ onViewAnalytics }: DashboardOverviewP
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-blue-500" />
-            Personalized AI Insights
+            <Apple className="w-5 h-5 text-green-500" />
+            Personalized Nutrition Plan
           </CardTitle>
-          <CardDescription>Based on your health tracking patterns</CardDescription>
+          <CardDescription>AI-powered meal plans based on your health tracker data</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
-          {stats.aiInsights.map((insight, index) => (
-            <div key={index} className="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-500">
-              <p className="text-sm">{insight}</p>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* 4 Meal Plans */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-lg flex items-center gap-2">
+                🍽️ Today's Meal Plan
+              </h3>
+              <div className="space-y-3">
+                {generateMealPlan(stats).map((meal, index) => (
+                  <div key={index} className="p-3 border rounded-lg bg-gradient-to-r from-green-50 to-blue-50">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-gray-800">{meal.name}</span>
+                      <Badge variant="outline">{meal.time}</Badge>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-1">{meal.description}</p>
+                    <div className="flex items-center gap-4 text-xs text-gray-500">
+                      <span>🔥 {meal.calories} cal</span>
+                      <span>🥗 {meal.nutrients}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          ))}
+            
+            {/* Health Recommendations */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-lg flex items-center gap-2">
+                <Heart className="w-5 h-5 text-red-500" />
+                Health Recommendations
+              </h3>
+              <div className="space-y-3">
+                {generateHealthRecommendations(stats).map((rec, index) => (
+                  <div key={index} className="p-3 border rounded-lg">
+                    <div className="flex items-center space-x-2 mb-1">
+                      <div className={`w-3 h-3 rounded-full ${
+                        rec.priority === 'high' ? 'bg-red-500' :
+                        rec.priority === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
+                      }`} />
+                      <span className="text-sm font-medium">{rec.category}</span>
+                    </div>
+                    <p className="text-sm text-gray-600">{rec.suggestion}</p>
+                    <div className="flex items-center space-x-2 mt-2">
+                      <TrendingUp className="w-4 h-4 text-blue-500" />
+                      <span className="text-xs text-blue-600">{rec.benefit}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 

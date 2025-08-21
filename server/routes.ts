@@ -553,6 +553,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Delete routes for history management
+  app.delete("/api/multimodal-analysis/:id", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      await storage.deleteMultiModalAnalysis(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Failed to delete multimodal analysis:", error);
+      res.status(500).json({ message: "Failed to delete analysis" });
+    }
+  });
+
+  app.delete("/api/digital-twins/:id", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      await storage.deleteDigitalTwin(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Failed to delete digital twin:", error);
+      res.status(500).json({ message: "Failed to delete twin" });
+    }
+  });
+
+  app.delete("/api/second-opinions/:id", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      await storage.deleteSecondOpinion(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Failed to delete second opinion:", error);
+      res.status(500).json({ message: "Failed to delete opinion" });
+    }
+  });
+
   app.post("/api/second-opinions", authenticateToken, async (req: AuthRequest, res) => {
     try {
       const { doctorDiagnosis, prescribedMedications, patientSymptoms } = req.body;
@@ -599,7 +630,7 @@ async function generateTwinPredictions(twin: any) {
   }
   
   // Exercise impact
-  const exerciseScores = {
+  const exerciseScores: { [key: string]: number } = {
     "sedentary": -10,
     "light": -5,
     "moderate": 10,
@@ -609,7 +640,7 @@ async function generateTwinPredictions(twin: any) {
   healthScore += exerciseScores[baselineData.lifestyle.exerciseFrequency] || 0;
   
   // Diet impact
-  const dietScores = {
+  const dietScores: { [key: string]: number } = {
     "balanced": 10,
     "mediterranean": 15,
     "vegetarian": 8,
@@ -624,7 +655,7 @@ async function generateTwinPredictions(twin: any) {
     healthScore -= 20;
   }
   
-  const drinkingPenalty = {
+  const drinkingPenalty: { [key: string]: number } = {
     "never": 5,
     "occasionally": 0,
     "socially": -2,
@@ -787,7 +818,7 @@ async function processVoiceRecording(audioBuffer: Buffer) {
   const extractedData = await extractSymptomsFromText(mockTranscription);
   
   // Add speech analysis
-  extractedData.speechAnalysis = {
+  (extractedData as any).speechAnalysis = {
     emotionalState: "concerned",
     painLevel: 6,
     clarity: "clear"

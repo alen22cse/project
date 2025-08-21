@@ -11,7 +11,7 @@ interface SymptomEntry {
   id: string;
   date: string;
   symptoms: string[];
-  severity: "mild" | "moderate" | "severe";
+  severity: string;
   duration: string;
   triggers: string;
   notes: string;
@@ -20,9 +20,10 @@ interface SymptomEntry {
 
 interface SymptomTrackerProps {
   sessionId: string;
+  analysisResult?: any; // Analysis result to track progress against
 }
 
-export function SymptomTracker({ sessionId }: SymptomTrackerProps) {
+export function SymptomTracker({ sessionId, analysisResult }: SymptomTrackerProps) {
   const [entries, setEntries] = useState<SymptomEntry[]>([
     {
       id: "1",
@@ -135,7 +136,7 @@ export function SymptomTracker({ sessionId }: SymptomTrackerProps) {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium text-gray-700">Severity</label>
-                <Select value={newEntry.severity} onValueChange={(value: string) => setNewEntry({...newEntry, severity: value as "mild" | "moderate" | "severe"})}>
+                <Select value={newEntry.severity} onValueChange={(value: "mild" | "moderate" | "severe") => setNewEntry({...newEntry, severity: value})}>
                   <SelectTrigger className="mt-1">
                     <SelectValue />
                   </SelectTrigger>

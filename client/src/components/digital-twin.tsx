@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { User, Activity, Brain, TrendingUp, Zap, Heart } from "lucide-react";
+import { User, Activity, Brain, TrendingUp, Zap, Heart, X } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -67,6 +67,15 @@ export default function DigitalTwin() {
 
   const { data: twins = [] } = useQuery<DigitalTwin[]>({
     queryKey: ['/api/digital-twins'],
+  });
+
+  const deleteTwinMutation = useMutation({
+    mutationFn: async (twinId: string) => 
+      apiRequest('DELETE', `/api/digital-twins/${twinId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/digital-twins'] });
+      toast({ title: "Digital Twin Deleted", description: "The digital twin has been removed from your account." });
+    },
   });
 
   const { data: simulations = [] } = useQuery<TwinSimulation[]>({
@@ -184,14 +193,24 @@ export default function DigitalTwin() {
                           Age {twin.baselineData.age} • {twin.baselineData.weight}kg • {twin.baselineData.height}cm
                         </CardDescription>
                       </div>
-                      {twin.predictiveModel && (
-                        <div className="text-right">
-                          <div className={`text-2xl font-bold ${getHealthScoreColor(twin.predictiveModel.healthScore)}`}>
-                            {twin.predictiveModel.healthScore}
+                      <div className="flex items-start gap-2">
+                        {twin.predictiveModel && (
+                          <div className="text-right">
+                            <div className={`text-2xl font-bold ${getHealthScoreColor(twin.predictiveModel.healthScore)}`}>
+                              {twin.predictiveModel.healthScore}
+                            </div>
+                            <div className="text-sm text-gray-500">Health Score</div>
                           </div>
-                          <div className="text-sm text-gray-500">Health Score</div>
-                        </div>
-                      )}
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteTwinMutation.mutate(twin.id)}
+                          className="text-red-500 hover:text-red-700 p-1"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent>

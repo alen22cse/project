@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SymptomTracker } from "@/components/symptom-tracker";
-import { EnhancedHealthInsights } from "@/components/enhanced-health-insights";
 import { TelehealthIntegration } from "@/components/telehealth-integration";
 import { ChatInterface } from "@/components/chat-interface";
 import { AnalysisResults } from "@/components/analysis-results";
@@ -84,7 +83,7 @@ export default function Dashboard() {
         {/* Navigation Tabs */}
         <div className="mb-8">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-9 text-sm">
+            <TabsList className="grid w-full grid-cols-8 text-sm">
               <TabsTrigger value="overview" className="flex items-center gap-2">
                 <BarChart3 className="w-4 h-4" />
                 Overview
@@ -96,10 +95,6 @@ export default function Dashboard() {
               <TabsTrigger value="tracker" className="flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
                 Tracker
-              </TabsTrigger>
-              <TabsTrigger value="insights" className="flex items-center gap-2">
-                <Brain className="w-4 h-4" />
-                Insights
               </TabsTrigger>
               <TabsTrigger value="telehealth" className="flex items-center gap-2">
                 <Video className="w-4 h-4" />
@@ -124,13 +119,14 @@ export default function Dashboard() {
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6 mt-6">
-              <DynamicDashboardOverview onViewAnalytics={() => setActiveTab("insights")} />
+              <DynamicDashboardOverview onViewAnalytics={() => setActiveTab("tracker")} />
             </TabsContent>
 
             <TabsContent value="symptoms" className="space-y-6 mt-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <SymptomTracker 
                   sessionId={sessionId}
+                  analysisResult={analysisResult}
                 />
                 <ChatInterface 
                   sessionId={sessionId}
@@ -150,9 +146,6 @@ export default function Dashboard() {
               <HabitTracker />
             </TabsContent>
 
-            <TabsContent value="insights" className="space-y-6 mt-6">
-              <EnhancedHealthInsights />
-            </TabsContent>
 
             <TabsContent value="telehealth" className="space-y-6 mt-6">
               <TelehealthIntegration />

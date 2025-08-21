@@ -58,6 +58,9 @@ export interface IStorage {
   getDigitalTwinsByUserId(userId: string): Promise<DigitalTwin[]>;
   getDigitalTwin(id: string): Promise<DigitalTwin | undefined>;
   updateDigitalTwin(id: string, updates: Partial<InsertDigitalTwin>): Promise<DigitalTwin | undefined>;
+  deleteDigitalTwin(id: string): Promise<void>;
+  deleteMultiModalAnalysis(id: string): Promise<void>;
+  deleteSecondOpinion(id: string): Promise<void>;
   
   // Twin Simulations methods
   createTwinSimulation(simulation: InsertTwinSimulation): Promise<TwinSimulation>;
@@ -339,6 +342,18 @@ export class MemStorage implements IStorage {
     };
     this.digitalTwins.set(id, updated);
     return updated;
+  }
+
+  async deleteDigitalTwin(id: string): Promise<void> {
+    this.digitalTwins.delete(id);
+  }
+
+  async deleteMultiModalAnalysis(id: string): Promise<void> {
+    this.multiModalAnalyses.delete(id);
+  }
+
+  async deleteSecondOpinion(id: string): Promise<void> {
+    this.secondOpinions.delete(id);
   }
 
   // Twin Simulation methods

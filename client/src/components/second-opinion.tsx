@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Stethoscope, Pill, AlertTriangle, CheckCircle, Info, Plus, X } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -43,6 +44,7 @@ interface SecondOpinion {
 export default function SecondOpinion() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState("new-opinion");
   
   const [formData, setFormData] = useState({
     doctorDiagnosis: "",
@@ -64,10 +66,20 @@ export default function SecondOpinion() {
         patientSymptoms: "",
         medications: [{ name: "", dosage: "", frequency: "", duration: "" }]
       });
+      setActiveTab("history"); // Switch to history tab to show results
       toast({ 
         title: "Second Opinion Complete!", 
         description: "AI analysis of your medical diagnosis is ready." 
       });
+    },
+  });
+
+  const deleteOpinionMutation = useMutation({
+    mutationFn: async (opinionId: string) => 
+      apiRequest('DELETE', `/api/second-opinions/${opinionId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/second-opinions'] });
+      toast({ title: "Opinion Deleted", description: "The second opinion has been removed from your history." });
     },
   });
 
@@ -108,182 +120,333 @@ export default function SecondOpinion() {
     });
   };
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity?.toLowerCase()) {
-      case 'high': return 'text-red-600 bg-red-50 border-red-200';
-      case 'medium': return 'text-orange-600 bg-orange-50 border-orange-200';
-      default: return 'text-blue-600 bg-blue-50 border-blue-200';
-    }
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
         <Stethoscope className="w-6 h-6 text-green-600" />
         <h2 className="text-2xl font-bold">AI-Powered Second Opinion</h2>
       </div>
-      <p className="text-gray-600">
-        Get AI analysis of medical diagnoses and prescriptions to better understand your treatment plan.
-      </p>
 
-      <Alert>
-        <Info className="h-4 w-4" />
-        <AlertDescription>
-          <strong>Important:</strong> This AI second opinion is for educational purposes only and should never replace professional medical advice. 
-          Always discuss any concerns with your healthcare provider.
-        </AlertDescription>
-      </Alert>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="new-opinion" className="flex items-center gap-2">
+            <Stethoscope className="w-4 h-4" />
+            New Analysis
+          </TabsTrigger>
+          <TabsTrigger value="history" className="flex items-center gap-2">
+            <CheckCircle className="w-4 h-4" />
+            History ({opinions.length})
+          </TabsTrigger>
+        </TabsList>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Input Form */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Enter Medical Information</CardTitle>
-            <CardDescription>
-              Provide details from your doctor's visit for AI analysis
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div>
-              <Label htmlFor="diagnosis">Doctor's Diagnosis *</Label>
-              <Textarea
-                id="diagnosis"
-                placeholder="e.g., Acute bronchitis with secondary bacterial infection..."
-                value={formData.doctorDiagnosis}
-                onChange={(e) => setFormData({ ...formData, doctorDiagnosis: e.target.value })}
-                className="min-h-20"
-              />
-            </div>
+        <TabsContent value="new-opinion" className="space-y-6 mt-6">
+          <p className="text-gray-600">
+            Get AI analysis of medical diagnoses and prescriptions to better understand your treatment plan.
+          </p>
 
-            <div>
-              <Label htmlFor="symptoms">Your Symptoms (Optional)</Label>
-              <Textarea
-                id="symptoms"
-                placeholder="Describe your symptoms in your own words..."
-                value={formData.patientSymptoms}
-                onChange={(e) => setFormData({ ...formData, patientSymptoms: e.target.value })}
-                className="min-h-20"
-              />
-            </div>
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Important:</strong> This AI second opinion is for educational purposes only and should never replace professional medical advice. 
+              Always discuss any concerns with your healthcare provider.
+            </AlertDescription>
+          </Alert>
 
-            <div>
-              <div className="flex justify-between items-center mb-3">
-                <Label>Prescribed Medications</Label>
-                <Button size="sm" variant="outline" onClick={addMedication}>
-                  <Plus className="w-4 h-4 mr-1" />
-                  Add Medication
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Enter Medical Information</CardTitle>
+                <CardDescription>
+                  Provide details from your doctor's visit for AI analysis
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div>
+                  <Label htmlFor="diagnosis">Doctor's Diagnosis *</Label>
+                  <Textarea
+                    id="diagnosis"
+                    placeholder="Enter the diagnosis provided by your doctor..."
+                    value={formData.doctorDiagnosis}
+                    onChange={(e) => setFormData({...formData, doctorDiagnosis: e.target.value})}
+                    className="min-h-[100px]"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="symptoms">Your Symptoms (Optional)</Label>
+                  <Textarea
+                    id="symptoms"
+                    placeholder="Describe your symptoms and how you're feeling..."
+                    value={formData.patientSymptoms}
+                    onChange={(e) => setFormData({...formData, patientSymptoms: e.target.value})}
+                    className="min-h-[80px]"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <Label>Prescribed Medications</Label>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm"
+                      onClick={addMedication}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Medication
+                    </Button>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {formData.medications.map((med, index) => (
+                      <div key={index} className="p-4 border rounded-lg space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">Medication {index + 1}</span>
+                          {formData.medications.length > 1 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeMedication(index)}
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div>
+                            <Label className="text-xs">Name *</Label>
+                            <Input
+                              placeholder="e.g., Lisinopril"
+                              value={med.name}
+                              onChange={(e) => updateMedication(index, 'name', e.target.value)}
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Dosage</Label>
+                            <Input
+                              placeholder="e.g., 10mg"
+                              value={med.dosage}
+                              onChange={(e) => updateMedication(index, 'dosage', e.target.value)}
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Frequency</Label>
+                            <Input
+                              placeholder="e.g., Once daily"
+                              value={med.frequency}
+                              onChange={(e) => updateMedication(index, 'frequency', e.target.value)}
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Duration</Label>
+                            <Input
+                              placeholder="e.g., 30 days"
+                              value={med.duration}
+                              onChange={(e) => updateMedication(index, 'duration', e.target.value)}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <Button 
+                  onClick={handleSubmit}
+                  disabled={analyzeOpinionMutation.isPending}
+                  className="w-full"
+                >
+                  {analyzeOpinionMutation.isPending ? "Analyzing..." : "Get AI Second Opinion"}
                 </Button>
-              </div>
+              </CardContent>
+            </Card>
 
-              <div className="space-y-3">
-                {formData.medications.map((medication, index) => (
-                  <div key={index} className="p-4 border rounded-lg space-y-3">
-                    <div className="flex justify-between items-center">
-                      <div className="font-medium text-sm">Medication {index + 1}</div>
-                      {formData.medications.length > 1 && (
-                        <Button 
-                          size="sm" 
-                          variant="ghost" 
-                          onClick={() => removeMedication(index)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label className="text-xs">Medication Name</Label>
-                        <Input
-                          placeholder="e.g., Amoxicillin"
-                          value={medication.name}
-                          onChange={(e) => updateMedication(index, 'name', e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs">Dosage</Label>
-                        <Input
-                          placeholder="e.g., 500mg"
-                          value={medication.dosage}
-                          onChange={(e) => updateMedication(index, 'dosage', e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs">Frequency</Label>
-                        <Input
-                          placeholder="e.g., 3 times daily"
-                          value={medication.frequency}
-                          onChange={(e) => updateMedication(index, 'frequency', e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs">Duration</Label>
-                        <Input
-                          placeholder="e.g., 7 days"
-                          value={medication.duration}
-                          onChange={(e) => updateMedication(index, 'duration', e.target.value)}
-                        />
-                      </div>
+            <Card className="lg:sticky lg:top-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Pill className="w-5 h-5 text-blue-600" />
+                  What You'll Get
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4 text-sm text-gray-600">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="w-4 h-4 text-green-500 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-gray-900">Diagnosis Analysis</p>
+                      <p>Clear explanation of your diagnosis in simple terms</p>
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
+                  
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="w-4 h-4 text-green-500 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-gray-900">Medication Review</p>
+                      <p>Purpose, side effects, and precautions for each medication</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="w-4 h-4 text-green-500 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-gray-900">Alternative Options</p>
+                      <p>Other treatment approaches you might discuss with your doctor</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="w-4 h-4 text-orange-500 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-gray-900">Red Flags</p>
+                      <p>Important symptoms or concerns to watch for</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
 
-            <Button 
-              onClick={handleSubmit}
-              disabled={analyzeOpinionMutation.isPending}
-              className="w-full"
-            >
-              {analyzeOpinionMutation.isPending ? "Analyzing..." : "Get AI Second Opinion"}
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Previous Opinions */}
-        <div className="space-y-4">
-          <h3 className="font-semibold">Previous Second Opinions</h3>
-          
+        <TabsContent value="history" className="space-y-4 mt-6">
           {opinions.length === 0 ? (
             <Card>
               <CardContent className="pt-6 text-center">
                 <Stethoscope className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">No second opinions yet</p>
-                <p className="text-sm text-gray-500">Submit your first medical analysis</p>
+                <p className="text-gray-600 mb-4">No second opinions yet</p>
+                <p className="text-sm text-gray-500">Get AI analysis of medical diagnoses using the "New Analysis" tab</p>
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-4 max-h-96 overflow-y-auto">
+            <div className="space-y-4">
               {opinions.map((opinion) => (
-                <Card key={opinion.id} className="cursor-pointer hover:shadow-md transition-shadow">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Stethoscope className="w-4 h-4" />
-                      {opinion.doctorDiagnosis.length > 50 
-                        ? `${opinion.doctorDiagnosis.substring(0, 50)}...`
-                        : opinion.doctorDiagnosis
-                      }
-                    </CardTitle>
-                    <CardDescription>
-                      {new Date(opinion.createdAt).toLocaleDateString()}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {opinion.prescribedMedications.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mb-2">
-                        {opinion.prescribedMedications.map((med, i) => (
-                          <Badge key={i} variant="outline" className="text-xs">
-                            <Pill className="w-3 h-3 mr-1" />
-                            {med.name}
-                          </Badge>
-                        ))}
+                <Card key={opinion.id}>
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle className="flex items-center gap-2">
+                          <Stethoscope className="w-5 h-5" />
+                          Second Opinion Analysis
+                        </CardTitle>
+                        <CardDescription>
+                          {new Date(opinion.createdAt).toLocaleDateString()} at{' '}
+                          {new Date(opinion.createdAt).toLocaleTimeString()}
+                        </CardDescription>
                       </div>
-                    )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => deleteOpinionMutation.mutate(opinion.id)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div>
+                      <h4 className="font-medium mb-2">Original Diagnosis:</h4>
+                      <p className="text-gray-700 p-3 bg-gray-50 rounded-lg">{opinion.doctorDiagnosis}</p>
+                    </div>
                     
                     {opinion.aiAnalysis && (
-                      <div className="text-sm text-gray-600">
-                        Analysis completed • {opinion.aiAnalysis.medicationAnalysis.length} medications analyzed
+                      <div className="space-y-4">
+                        <div>
+                          <h4 className="font-medium mb-2">AI Explanation:</h4>
+                          <p className="text-gray-700">{opinion.aiAnalysis.diagnosisExplanation}</p>
+                        </div>
+
+                        {opinion.aiAnalysis.medicationAnalysis.length > 0 && (
+                          <div>
+                            <h4 className="font-medium mb-3">Medication Analysis:</h4>
+                            <div className="space-y-3">
+                              {opinion.aiAnalysis.medicationAnalysis.map((med, i) => (
+                                <div key={i} className="p-3 border rounded-lg">
+                                  <h5 className="font-medium text-blue-700">{med.name}</h5>
+                                  <p className="text-sm text-gray-600 mt-1">{med.purpose}</p>
+                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+                                    <div>
+                                      <span className="text-xs font-medium text-gray-500">Side Effects:</span>
+                                      <ul className="text-xs text-gray-600 mt-1">
+                                        {med.sideEffects.slice(0, 3).map((effect, j) => (
+                                          <li key={j}>• {effect}</li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                    <div>
+                                      <span className="text-xs font-medium text-gray-500">Interactions:</span>
+                                      <ul className="text-xs text-gray-600 mt-1">
+                                        {med.interactions.slice(0, 3).map((interaction, j) => (
+                                          <li key={j}>• {interaction}</li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                    <div>
+                                      <span className="text-xs font-medium text-gray-500">Precautions:</span>
+                                      <ul className="text-xs text-gray-600 mt-1">
+                                        {med.precautions.slice(0, 3).map((precaution, j) => (
+                                          <li key={j}>• {precaution}</li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {opinion.aiAnalysis.alternativeOptions.length > 0 && (
+                          <div>
+                            <h4 className="font-medium mb-3 flex items-center gap-2">
+                              <CheckCircle className="w-4 h-4 text-blue-500" />
+                              Alternative Treatment Options
+                            </h4>
+                            <div className="p-4 bg-blue-50 rounded-lg">
+                              <ul className="space-y-1">
+                                {opinion.aiAnalysis.alternativeOptions.map((option, i) => (
+                                  <li key={i} className="text-sm text-blue-800">• {option}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                        )}
+
+                        {opinion.aiAnalysis.redFlags.length > 0 && (
+                          <div>
+                            <h4 className="font-medium mb-3 flex items-center gap-2">
+                              <AlertTriangle className="w-4 h-4 text-red-500" />
+                              Important Warning Signs
+                            </h4>
+                            <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+                              <ul className="space-y-1">
+                                {opinion.aiAnalysis.redFlags.map((flag, i) => (
+                                  <li key={i} className="text-sm text-red-700 font-medium">• {flag}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                        )}
+
+                        {opinion.aiAnalysis.questions.length > 0 && (
+                          <div>
+                            <h4 className="font-medium mb-3 flex items-center gap-2">
+                              <Info className="w-4 h-4" />
+                              Questions to Ask Your Doctor
+                            </h4>
+                            <div className="p-4 bg-gray-50 rounded-lg">
+                              <ul className="space-y-2">
+                                {opinion.aiAnalysis.questions.map((question, i) => (
+                                  <li key={i} className="text-sm flex items-start gap-2">
+                                    <span className="font-medium text-blue-600">{i + 1}.</span>
+                                    {question}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </CardContent>
@@ -291,161 +454,8 @@ export default function SecondOpinion() {
               ))}
             </div>
           )}
-        </div>
-      </div>
-
-      {/* Detailed Analysis Results */}
-      {opinions.length > 0 && opinions[0].aiAnalysis && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-green-600" />
-              Latest AI Analysis Results
-            </CardTitle>
-            <CardDescription>
-              Comprehensive breakdown of your medical treatment plan
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              {/* Diagnosis Explanation */}
-              <div>
-                <h4 className="font-medium mb-2 flex items-center gap-2">
-                  <Info className="w-4 h-4" />
-                  Diagnosis Explanation
-                </h4>
-                <div className="p-4 bg-blue-50 rounded-lg">
-                  <p className="text-blue-900">{opinions[0].aiAnalysis.diagnosisExplanation}</p>
-                </div>
-              </div>
-
-              {/* Medication Analysis */}
-              {opinions[0].aiAnalysis.medicationAnalysis.length > 0 && (
-                <div>
-                  <h4 className="font-medium mb-3 flex items-center gap-2">
-                    <Pill className="w-4 h-4" />
-                    Medication Breakdown
-                  </h4>
-                  <div className="space-y-4">
-                    {opinions[0].aiAnalysis.medicationAnalysis.map((med, index) => (
-                      <div key={index} className="border rounded-lg p-4">
-                        <div className="flex items-center gap-2 mb-3">
-                          <h5 className="font-medium">{med.name}</h5>
-                          <Badge variant="outline">{med.purpose}</Badge>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          {med.sideEffects.length > 0 && (
-                            <div>
-                              <div className="text-sm font-medium text-orange-700 mb-2">Side Effects</div>
-                              <ul className="text-sm space-y-1">
-                                {med.sideEffects.map((effect, i) => (
-                                  <li key={i} className="flex items-start gap-1">
-                                    <span className="w-1 h-1 bg-orange-400 rounded-full mt-2"></span>
-                                    {effect}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-
-                          {med.interactions.length > 0 && (
-                            <div>
-                              <div className="text-sm font-medium text-red-700 mb-2">Drug Interactions</div>
-                              <ul className="text-sm space-y-1">
-                                {med.interactions.map((interaction, i) => (
-                                  <li key={i} className="flex items-start gap-1">
-                                    <AlertTriangle className="w-3 h-3 text-red-500 mt-0.5" />
-                                    {interaction}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-
-                          {med.precautions.length > 0 && (
-                            <div>
-                              <div className="text-sm font-medium text-blue-700 mb-2">Precautions</div>
-                              <ul className="text-sm space-y-1">
-                                {med.precautions.map((precaution, i) => (
-                                  <li key={i} className="flex items-start gap-1">
-                                    <Info className="w-3 h-3 text-blue-500 mt-0.5" />
-                                    {precaution}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <Separator />
-
-              {/* Additional Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Alternative Options */}
-                {opinions[0].aiAnalysis.alternativeOptions.length > 0 && (
-                  <div>
-                    <h4 className="font-medium mb-3 flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-green-600" />
-                      Alternative Treatment Options
-                    </h4>
-                    <ul className="space-y-2">
-                      {opinions[0].aiAnalysis.alternativeOptions.map((option, i) => (
-                        <li key={i} className="text-sm p-3 bg-green-50 rounded-lg">
-                          {option}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* Red Flags */}
-                {opinions[0].aiAnalysis.redFlags.length > 0 && (
-                  <div>
-                    <h4 className="font-medium mb-3 flex items-center gap-2">
-                      <AlertTriangle className="w-4 h-4 text-red-600" />
-                      Warning Signs to Watch
-                    </h4>
-                    <ul className="space-y-2">
-                      {opinions[0].aiAnalysis.redFlags.map((flag, i) => (
-                        <li key={i} className="text-sm p-3 bg-red-50 rounded-lg border border-red-200 flex items-start gap-2">
-                          <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
-                          {flag}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-
-              {/* Questions to Ask Doctor */}
-              {opinions[0].aiAnalysis.questions.length > 0 && (
-                <div>
-                  <h4 className="font-medium mb-3 flex items-center gap-2">
-                    <Info className="w-4 h-4" />
-                    Questions to Ask Your Doctor
-                  </h4>
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <ul className="space-y-2">
-                      {opinions[0].aiAnalysis.questions.map((question, i) => (
-                        <li key={i} className="text-sm flex items-start gap-2">
-                          <span className="font-medium text-blue-600">{i + 1}.</span>
-                          {question}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

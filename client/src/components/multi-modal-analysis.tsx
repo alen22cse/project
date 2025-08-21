@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { Mic, Camera, FileText, Upload, Play, Pause, AlertTriangle, CheckCircle, Clock } from "lucide-react";
+import { Mic, Camera, FileText, Upload, Play, Pause, AlertTriangle, CheckCircle, Clock, X } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -54,6 +54,15 @@ export default function MultiModalAnalysis() {
     queryKey: ['/api/multimodal-analysis'],
   });
 
+  const deleteAnalysisMutation = useMutation({
+    mutationFn: async (analysisId: string) => 
+      apiRequest('DELETE', `/api/multimodal-analysis/${analysisId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/multimodal-analysis'] });
+      toast({ title: "Analysis Deleted", description: "The analysis has been removed from your history." });
+    },
+  });
+
   const analyzeTextMutation = useMutation({
     mutationFn: async (text: string) => 
       apiRequest('POST', '/api/multimodal-analysis/text', { textInput: text }),
@@ -68,10 +77,20 @@ export default function MultiModalAnalysis() {
     mutationFn: async (audioBlob: Blob) => {
       const formData = new FormData();
       formData.append('audio', audioBlob, 'recording.webm');
+      const token = localStorage.getItem("auth_token");
       return fetch('/api/multimodal-analysis/voice', {
         method: 'POST',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: formData,
-      }).then(res => res.json());
+        credentials: "include",
+      }).then(res => {
+        if (!res.ok) {
+          throw new Error(`${res.status}: ${res.statusText}`);
+        }
+        return res.json();
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/multimodal-analysis'] });
@@ -84,10 +103,20 @@ export default function MultiModalAnalysis() {
     mutationFn: async (imageFile: File) => {
       const formData = new FormData();
       formData.append('image', imageFile);
+      const token = localStorage.getItem("auth_token");
       return fetch('/api/multimodal-analysis/image', {
         method: 'POST',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: formData,
-      }).then(res => res.json());
+        credentials: "include",
+      }).then(res => {
+        if (!res.ok) {
+          throw new Error(`${res.status}: ${res.statusText}`);
+        }
+        return res.json();
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/multimodal-analysis'] });
@@ -413,6 +442,14 @@ export default function MultiModalAnalysis() {
                           </span>
                         </div>
                       )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => deleteAnalysisMutation.mutate(analysis.id)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
                     </div>
                   </CardHeader>
                   <CardContent>
