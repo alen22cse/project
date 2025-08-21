@@ -3,7 +3,7 @@ import type { SymptomAnalysisRequest, AnalysisResult, ChatMessage } from "@share
 
 export const api = {
   analyzeSymptoms: async (data: SymptomAnalysisRequest): Promise<AnalysisResult> => {
-    const response = await apiRequest("POST", "/api/analyze-symptoms", data);
+    const response = await apiRequest("POST", "/api/analyze", data);
     return response.json();
   },
 

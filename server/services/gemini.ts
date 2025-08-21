@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import type { SymptomAnalysisRequest, AnalysisResult, HealthRecord } from "@shared/schema";
 
-// Note that the newest Gemini model series is "gemini-2.5-flash" or gemini-2.5-pro"
+// Using Gemini 2.0 Flash for enhanced medical analysis as requested
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
 export async function analyzeSymptoms(
@@ -73,7 +73,7 @@ ANALYSIS REQUIREMENTS:
 Focus on comprehensive symptom extraction and evidence-based clinical decision making. Ensure all potential conditions are considered based on the presenting symptoms.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash-exp",
+      model: "gemini-2.0-flash",
       config: {
         systemInstruction: systemPrompt,
         responseMimeType: "application/json",
