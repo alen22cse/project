@@ -155,98 +155,71 @@ export function HabitTracker() {
         userId: user?.id
       });
       
-      const insight = await response.json();
-      setAiInsight(insight);
+      const result = await response.json();
+      setAiInsight(result.insight);
       
-      // Update health score based on habits
-      const newScore = calculateHealthScore(logData);
-      setHealthScore(newScore);
-      setStreak(prev => prev + 1);
-      
+      toast({
+        title: "AI Analysis Complete",
+        description: "Personal recommendations generated based on your habits.",
+      });
     } catch (error) {
-      console.error("Failed to generate AI insight:", error);
+      console.error("Error generating AI insight:", error);
+      toast({
+        title: "AI Analysis Error", 
+        description: "Unable to generate recommendations. Please try again.",
+        variant: "destructive"
+      });
     }
-  };
-
-  const calculateHealthScore = (log: Partial<HabitLog>): number => {
-    let score = 0;
-    let factors = 0;
-    
-    // Sleep score (0-25)
-    if (log.sleep?.hours) {
-      const sleepScore = Math.min(25, (log.sleep.hours / 8) * 25);
-      score += sleepScore;
-      factors++;
-    }
-    
-    // Exercise score (0-25)
-    if (log.exercise?.steps) {
-      const exerciseScore = Math.min(25, (log.exercise.steps / 10000) * 25);
-      score += exerciseScore;
-      factors++;
-    }
-    
-    // Nutrition score (0-25)
-    if (log.nutrition?.meals && log.nutrition.meals.length > 0) {
-      const nutritionScore = Math.min(25, (log.nutrition.meals.length / 3) * 25);
-      score += nutritionScore;
-      factors++;
-    }
-    
-    // Mood score (0-25)
-    if (log.mood?.moodRating) {
-      const moodScore = (log.mood.moodRating / 10) * 25;
-      score += moodScore;
-      factors++;
-    }
-    
-    return factors > 0 ? Math.round(score / factors * 4) : 75;
   };
 
   const saveHabitLog = async () => {
+    if (!user?.id) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to save your habits.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsLogging(true);
     try {
-      if (!user || !token) {
-        toast({
-          title: "Please log in",
-          description: "You need to be logged in to save habit logs.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Save to backend
-      const response = await apiRequest("POST", "/api/habits", {
+      const logWithId = {
         ...currentLog,
-        userId: user.id,
-        date: currentLog.date
+        id: `${user.id}-${currentLog.date}`,
+        userId: user.id
+      };
+
+      await apiRequest("POST", "/api/habits", logWithId);
+      
+      // Generate AI insight after successful save
+      await generateAIInsight(logWithId);
+      
+      // Update health score and streak
+      setHealthScore(prev => Math.min(100, prev + 2));
+      setStreak(prev => prev + 1);
+      
+      toast({
+        title: "Habits Saved Successfully",
+        description: "Your daily log has been recorded with AI recommendations.",
       });
 
-      if (response.ok) {
-        await generateAIInsight(currentLog);
-        
-        toast({
-          title: "Habits Logged Successfully! 🎉",
-          description: "Your daily habits have been recorded. Check your AI insights below.",
-        });
-
-        // Reset form for next day
-        setCurrentLog({
-          date: new Date().toISOString().split('T')[0],
-          nutrition: { meals: [], waterGlasses: 8, notes: "" },
-          sleep: { hours: 8, quality: 7, notes: "", snoring: false, stressRelated: false },
-          exercise: { steps: 10000, workoutMinutes: 30, type: "" },
-          medication: { taken: [], missed: [], notes: "" },
-          mood: { stressLevel: 5, moodRating: 7, notes: "" },
-        });
-      }
+      // Reset form
+      setCurrentLog({
+        date: new Date().toISOString().split('T')[0],
+        nutrition: { meals: [], waterGlasses: 8, notes: "" },
+        sleep: { hours: 8, quality: 7, notes: "", snoring: false, stressRelated: false },
+        exercise: { steps: 10000, workoutMinutes: 30, type: "" },
+        medication: { taken: [], missed: [], notes: "" },
+        mood: { stressLevel: 5, moodRating: 7, notes: "" },
+      });
 
     } catch (error) {
       console.error("Failed to save habit log:", error);
       toast({
         title: "Save Failed",
-        description: "Failed to save your habit log. Please try again.",
-        variant: "destructive",
+        description: "Unable to save your habits. Please try again.",
+        variant: "destructive"
       });
     } finally {
       setIsLogging(false);
