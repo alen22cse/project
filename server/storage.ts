@@ -143,12 +143,8 @@ export class MemStorage implements IStorage {
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    for (const user of this.users.values()) {
-      if (user.email === email) {
-        return user;
-      }
-    }
-    return undefined;
+    const users = Array.from(this.users.values());
+    return users.find(user => user.email === email);
   }
 
   async createUser(user: InsertUser): Promise<User> {
@@ -202,12 +198,8 @@ export class MemStorage implements IStorage {
 
   // AI outputs methods
   async getAiOutputByReportId(reportId: string): Promise<AiOutput | undefined> {
-    for (const output of this.aiOutputs.values()) {
-      if (output.reportId === reportId) {
-        return output;
-      }
-    }
-    return undefined;
+    const outputs = Array.from(this.aiOutputs.values());
+    return outputs.find(output => output.reportId === reportId);
   }
 
   async createAiOutput(output: InsertAiOutput): Promise<AiOutput> {

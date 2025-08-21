@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { 
   Apple, 
   Droplets, 
@@ -13,22 +15,30 @@ import {
   Pill, 
   Heart,
   Plus,
-  Save
+  Save,
+  TrendingUp,
+  Award,
+  Zap,
+  Mic
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuthSimple";
+import { apiRequest } from "@/lib/queryClient";
 
 interface HabitLog {
   id: string;
-  date: Date;
+  date: string;
   nutrition: {
-    meals: number;
+    meals: { meal: string; time: string; satisfaction: number }[];
     waterGlasses: number;
     notes: string;
   };
   sleep: {
     hours: number;
-    quality: number; // 1-10
+    quality: number;
     notes: string;
+    snoring?: boolean;
+    stressRelated?: boolean;
   };
   exercise: {
     steps: number;
@@ -41,23 +51,44 @@ interface HabitLog {
     notes: string;
   };
   mood: {
-    stressLevel: number; // 1-10
-    moodRating: number; // 1-10
+    stressLevel: number;
+    moodRating: number;
     notes: string;
   };
 }
 
+interface AIInsight {
+  message: string;
+  type: "positive" | "warning" | "suggestion";
+  score: number;
+}
+
 export function HabitTracker() {
   const { toast } = useToast();
+  const { user, token } = useAuth();
   const [isLogging, setIsLogging] = useState(false);
+  const [aiInsight, setAiInsight] = useState<AIInsight | null>(null);
+  const [healthScore, setHealthScore] = useState(75);
+  const [streak, setStreak] = useState(0);
+  const [showAdaptiveQuestions, setShowAdaptiveQuestions] = useState(false);
+  const [currentMeal, setCurrentMeal] = useState({ meal: "", time: "", satisfaction: 8 });
+  
   const [currentLog, setCurrentLog] = useState<Partial<HabitLog>>({
-    date: new Date(),
-    nutrition: { meals: 3, waterGlasses: 8, notes: "" },
-    sleep: { hours: 8, quality: 7, notes: "" },
+    date: new Date().toISOString().split('T')[0],
+    nutrition: { meals: [], waterGlasses: 8, notes: "" },
+    sleep: { hours: 8, quality: 7, notes: "", snoring: false, stressRelated: false },
     exercise: { steps: 10000, workoutMinutes: 30, type: "" },
     medication: { taken: [], missed: [], notes: "" },
     mood: { stressLevel: 5, moodRating: 7, notes: "" },
   });
+
+  useEffect(() => {
+    if (currentLog.sleep?.quality && currentLog.sleep.quality < 6) {
+      setShowAdaptiveQuestions(true);
+    } else {
+      setShowAdaptiveQuestions(false);
+    }
+  }, [currentLog.sleep?.quality]);
 
   const updateNutrition = (field: string, value: any) => {
     setCurrentLog(prev => ({
@@ -94,28 +125,124 @@ export function HabitTracker() {
     }));
   };
 
+  const addMeal = () => {
+    if (currentMeal.meal.trim()) {
+      setCurrentLog(prev => ({
+        ...prev,
+        nutrition: {
+          ...prev.nutrition!,
+          meals: [...(prev.nutrition?.meals || []), currentMeal]
+        }
+      }));
+      setCurrentMeal({ meal: "", time: "", satisfaction: 8 });
+    }
+  };
+
+  const removeMeal = (index: number) => {
+    setCurrentLog(prev => ({
+      ...prev,
+      nutrition: {
+        ...prev.nutrition!,
+        meals: prev.nutrition?.meals?.filter((_, i) => i !== index) || []
+      }
+    }));
+  };
+
+  const generateAIInsight = async (logData: Partial<HabitLog>) => {
+    try {
+      const response = await apiRequest("POST", "/api/habits/analyze", {
+        habitLog: logData,
+        userId: user?.id
+      });
+      
+      const insight = await response.json();
+      setAiInsight(insight);
+      
+      // Update health score based on habits
+      const newScore = calculateHealthScore(logData);
+      setHealthScore(newScore);
+      setStreak(prev => prev + 1);
+      
+    } catch (error) {
+      console.error("Failed to generate AI insight:", error);
+    }
+  };
+
+  const calculateHealthScore = (log: Partial<HabitLog>): number => {
+    let score = 0;
+    let factors = 0;
+    
+    // Sleep score (0-25)
+    if (log.sleep?.hours) {
+      const sleepScore = Math.min(25, (log.sleep.hours / 8) * 25);
+      score += sleepScore;
+      factors++;
+    }
+    
+    // Exercise score (0-25)
+    if (log.exercise?.steps) {
+      const exerciseScore = Math.min(25, (log.exercise.steps / 10000) * 25);
+      score += exerciseScore;
+      factors++;
+    }
+    
+    // Nutrition score (0-25)
+    if (log.nutrition?.meals && log.nutrition.meals.length > 0) {
+      const nutritionScore = Math.min(25, (log.nutrition.meals.length / 3) * 25);
+      score += nutritionScore;
+      factors++;
+    }
+    
+    // Mood score (0-25)
+    if (log.mood?.moodRating) {
+      const moodScore = (log.mood.moodRating / 10) * 25;
+      score += moodScore;
+      factors++;
+    }
+    
+    return factors > 0 ? Math.round(score / factors * 4) : 75;
+  };
+
   const saveHabitLog = async () => {
     setIsLogging(true);
     try {
-      // Here you would normally save to your backend
-      console.log("Saving habit log:", currentLog);
-      
-      toast({
-        title: "Habits Logged",
-        description: "Your daily habits have been successfully recorded.",
+      if (!user || !token) {
+        toast({
+          title: "Please log in",
+          description: "You need to be logged in to save habit logs.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Save to backend
+      const response = await apiRequest("POST", "/api/habits", {
+        ...currentLog,
+        userId: user.id,
+        date: currentLog.date
       });
 
-      // Reset form for next day
-      setCurrentLog({
-        date: new Date(),
-        nutrition: { meals: 3, waterGlasses: 8, notes: "" },
-        sleep: { hours: 8, quality: 7, notes: "" },
-        exercise: { steps: 10000, workoutMinutes: 30, type: "" },
-        medication: { taken: [], missed: [], notes: "" },
-        mood: { stressLevel: 5, moodRating: 7, notes: "" },
-      });
+      if (response.ok) {
+        await generateAIInsight(currentLog);
+        
+        toast({
+          title: "Habits Logged Successfully! 🎉",
+          description: "Your daily habits have been recorded. Check your AI insights below.",
+        });
+
+        // Reset form for next day
+        setCurrentLog({
+          date: new Date().toISOString().split('T')[0],
+          nutrition: { meals: [], waterGlasses: 8, notes: "" },
+          sleep: { hours: 8, quality: 7, notes: "", snoring: false, stressRelated: false },
+          exercise: { steps: 10000, workoutMinutes: 30, type: "" },
+          medication: { taken: [], missed: [], notes: "" },
+          mood: { stressLevel: 5, moodRating: 7, notes: "" },
+        });
+      }
 
     } catch (error) {
+      console.error("Failed to save habit log:", error);
       toast({
         title: "Save Failed",
         description: "Failed to save your habit log. Please try again.",
@@ -135,11 +262,53 @@ export function HabitTracker() {
             Track your daily habits for better health insights
           </p>
         </div>
-        <Button onClick={saveHabitLog} disabled={isLogging} className="flex items-center gap-2">
-          <Save className="w-4 h-4" />
-          {isLogging ? "Saving..." : "Save Today's Log"}
-        </Button>
+        <div className="flex items-center gap-4">
+          <div className="text-right">
+            <div className="flex items-center gap-2">
+              <Award className="w-4 h-4 text-yellow-500" />
+              <span className="text-sm font-medium">{streak} day streak</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-green-500" />
+              <span className="text-sm text-muted-foreground">Health Score: {healthScore}/100</span>
+            </div>
+          </div>
+          <Button onClick={saveHabitLog} disabled={isLogging} className="flex items-center gap-2">
+            <Save className="w-4 h-4" />
+            {isLogging ? "Saving..." : "Save Today's Log"}
+          </Button>
+        </div>
       </div>
+
+      {/* Health Score Progress */}
+      <Card className="bg-gradient-to-r from-green-50 to-blue-50">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium">Today's Health Score</span>
+            <Badge variant={healthScore >= 80 ? "default" : healthScore >= 60 ? "secondary" : "destructive"}>
+              {healthScore >= 80 ? "Excellent" : healthScore >= 60 ? "Good" : "Needs Improvement"}
+            </Badge>
+          </div>
+          <Progress value={healthScore} className="h-2" />
+        </CardContent>
+      </Card>
+
+      {/* AI Insight */}
+      {aiInsight && (
+        <Card className={`border-l-4 ${aiInsight.type === 'positive' ? 'border-green-500 bg-green-50' : 
+          aiInsight.type === 'warning' ? 'border-yellow-500 bg-yellow-50' : 'border-blue-500 bg-blue-50'}`}>
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <Zap className={`w-5 h-5 mt-0.5 ${aiInsight.type === 'positive' ? 'text-green-600' : 
+                aiInsight.type === 'warning' ? 'text-yellow-600' : 'text-blue-600'}`} />
+              <div>
+                <h4 className="font-medium mb-1">AI Health Insight</h4>
+                <p className="text-sm text-muted-foreground">{aiInsight.message}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Nutrition Tracking */}
@@ -152,16 +321,57 @@ export function HabitTracker() {
             <CardDescription>Track your meals and water intake</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Meal Tracker */}
             <div>
-              <Label htmlFor="meals">Meals consumed today</Label>
-              <Input
-                id="meals"
-                type="number"
-                value={currentLog.nutrition?.meals || 0}
-                onChange={(e) => updateNutrition("meals", parseInt(e.target.value))}
-                min="0"
-                max="10"
-              />
+              <Label>Track Individual Meals</Label>
+              <div className="flex gap-2 mb-2">
+                <Input
+                  placeholder="Meal description (e.g., Chicken salad)"
+                  value={currentMeal.meal}
+                  onChange={(e) => setCurrentMeal(prev => ({ ...prev, meal: e.target.value }))}
+                  className="flex-1"
+                />
+                <Input
+                  type="time"
+                  value={currentMeal.time}
+                  onChange={(e) => setCurrentMeal(prev => ({ ...prev, time: e.target.value }))}
+                  className="w-32"
+                />
+                <Button onClick={addMeal} size="sm">
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Satisfaction (1-10)</Label>
+                <Slider
+                  value={[currentMeal.satisfaction]}
+                  onValueChange={(value) => setCurrentMeal(prev => ({ ...prev, satisfaction: value[0] }))}
+                  min={1}
+                  max={10}
+                  step={1}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Logged Meals */}
+              <div className="mt-4">
+                <Label className="text-sm text-muted-foreground">Today's Meals ({currentLog.nutrition?.meals?.length || 0})</Label>
+                <div className="space-y-2 mt-2">
+                  {currentLog.nutrition?.meals?.map((meal, index) => (
+                    <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                      <div>
+                        <span className="font-medium">{meal.meal}</span>
+                        {meal.time && <span className="text-sm text-muted-foreground ml-2">at {meal.time}</span>}
+                        <div className="text-xs text-muted-foreground">Satisfaction: {meal.satisfaction}/10</div>
+                      </div>
+                      <Button variant="ghost" size="sm" onClick={() => removeMeal(index)}>
+                        ×
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
             <div>
               <Label htmlFor="water">Water glasses (8oz each)</Label>
@@ -237,6 +447,33 @@ export function HabitTracker() {
                 onChange={(e) => updateSleep("notes", e.target.value)}
               />
             </div>
+
+            {/* Adaptive Questions for Poor Sleep */}
+            {showAdaptiveQuestions && (
+              <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                <h4 className="font-medium mb-3 text-yellow-800">Sleep Quality Analysis</h4>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="snoring"
+                      checked={currentLog.sleep?.snoring || false}
+                      onChange={(e) => updateSleep("snoring", e.target.checked)}
+                    />
+                    <Label htmlFor="snoring" className="text-sm">Did you experience snoring?</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="stress-sleep"
+                      checked={currentLog.sleep?.stressRelated || false}
+                      onChange={(e) => updateSleep("stressRelated", e.target.checked)}
+                    />
+                    <Label htmlFor="stress-sleep" className="text-sm">Was poor sleep related to stress/anxiety?</Label>
+                  </div>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 

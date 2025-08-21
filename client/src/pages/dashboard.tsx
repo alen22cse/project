@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SymptomTracker } from "@/components/symptom-tracker";
-import { HealthInsights } from "@/components/health-insights";
+import { EnhancedHealthInsights } from "@/components/enhanced-health-insights";
 import { TelehealthIntegration } from "@/components/telehealth-integration";
 import { ChatInterface } from "@/components/chat-interface";
 import { AnalysisResults } from "@/components/analysis-results";
@@ -15,9 +15,12 @@ import { HospitalLocator } from "@/components/hospital-locator";
 import { PDFGenerator } from "@/components/pdf-generator";
 import { HospitalFinder } from "@/components/hospital-finder";
 import { HabitTracker } from "@/components/habit-tracker";
+import { DynamicDashboardOverview } from "@/components/dynamic-dashboard-overview";
+import { useAuth } from "@/hooks/useAuthSimple";
 import type { AnalysisResult } from "@shared/schema";
 
 export default function Dashboard() {
+  const { user, logout } = useAuth();
   const [sessionId] = useState(() => `dashboard-session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -57,6 +60,14 @@ export default function Dashboard() {
                 <Settings className="w-4 h-4 mr-2" />
                 Settings
               </Button>
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600">
+                  {user?.firstName ? `Hi, ${user.firstName}` : `Hi, ${user?.email}`}
+                </span>
+                <Button variant="ghost" size="sm" onClick={logout}>
+                  Logout
+                </Button>
+              </div>
               <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
                 <User className="text-gray-600 w-4 h-4" />
               </div>
@@ -67,8 +78,77 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        {/* Navigation Tabs */}
+        <div className="mb-8">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-6">
+              <TabsTrigger value="overview" className="flex items-center gap-2">
+                <BarChart3 className="w-4 h-4" />
+                Overview
+              </TabsTrigger>
+              <TabsTrigger value="symptoms" className="flex items-center gap-2">
+                <Heart className="w-4 h-4" />
+                Symptoms
+              </TabsTrigger>
+              <TabsTrigger value="tracker" className="flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                Tracker
+              </TabsTrigger>
+              <TabsTrigger value="insights" className="flex items-center gap-2">
+                <Brain className="w-4 h-4" />
+                Insights
+              </TabsTrigger>
+              <TabsTrigger value="telehealth" className="flex items-center gap-2">
+                <Video className="w-4 h-4" />
+                Telehealth
+              </TabsTrigger>
+              <TabsTrigger value="emergency" className="flex items-center gap-2">
+                <Bell className="w-4 h-4" />
+                Emergency
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="overview" className="space-y-6 mt-6">
+              <DynamicDashboardOverview onViewAnalytics={() => setActiveTab("insights")} />
+            </TabsContent>
+
+            <TabsContent value="symptoms" className="space-y-6 mt-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <SymptomTracker 
+                  onAnalysisComplete={handleAnalysisComplete}
+                  onAnalysisStart={handleAnalysisStart}
+                  sessionId={sessionId}
+                />
+                <ChatInterface sessionId={sessionId} />
+              </div>
+              {analysisResult && (
+                <AnalysisResults result={analysisResult} />
+              )}
+            </TabsContent>
+
+            <TabsContent value="tracker" className="space-y-6 mt-6">
+              <HabitTracker />
+            </TabsContent>
+
+            <TabsContent value="insights" className="space-y-6 mt-6">
+              <EnhancedHealthInsights />
+            </TabsContent>
+
+            <TabsContent value="telehealth" className="space-y-6 mt-6">
+              <TelehealthIntegration />
+            </TabsContent>
+
+            <TabsContent value="emergency" className="space-y-6 mt-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <EmergencyContact />
+                <HospitalFinder />
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        {/* Previous Quick Stats for reference */}
+        <div className="hidden grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <Card className="bg-gradient-to-r from-medical-blue to-blue-600 text-white">
             <CardContent className="p-4">
               <div className="flex items-center space-x-3">
